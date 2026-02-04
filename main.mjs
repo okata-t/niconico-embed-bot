@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import "dotenv/config";
+import express from "express";
 import fetch from "node-fetch";
 
 const client = new Client({
@@ -80,3 +81,20 @@ client.on("messageCreate", async (message) => {
 });
 
 client.login(process.env.DISCORD_TOKEN);
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+// ヘルスチェック用エンドポイント
+app.get('/', (req, res) => {
+    res.json({
+        status: 'Bot is running! 🤖',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
+// サーバー起動
+app.listen(port, () => {
+    console.log(`🌐 Web サーバーがポート ${port} で起動しました`);
+});
