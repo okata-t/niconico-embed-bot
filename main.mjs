@@ -12,7 +12,6 @@ const client = new Client({
   ],
 });
 
-const TOKEN = process.env.DISCORD_TOKEN;
 
 client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -80,6 +79,10 @@ client.on("messageCreate", async (message) => {
   }
 });
 
+client.on('error', (error) => {
+    console.error('❌ Discord クライアントエラー:', error);
+});
+
 client.login(process.env.DISCORD_TOKEN);
 
 // Discord にログイン
@@ -96,6 +99,7 @@ client.login(process.env.DISCORD_TOKEN)
     });
 
 const app = express();
+const port = process.env.PORT || 3000;
 
 // ヘルスチェック用エンドポイント
 app.get('/', (req, res) => {
