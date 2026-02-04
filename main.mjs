@@ -83,21 +83,15 @@ client.on('error', (error) => {
     console.error('❌ Discord クライアントエラー:', error);
 });
 
-client.login(process.env.DISCORD_TOKEN);
 
-// Discord にログイン
-if (!process.env.DISCORD_TOKEN) {
-    console.error('❌ DISCORD_TOKEN が .env ファイルに設定されていません！');
-    process.exit(1);
-}
+console.log("TOKEN exists:", !!process.env.DISCORD_TOKEN);
+
 
 console.log('🔄 Discord に接続中...');
 client.login(process.env.DISCORD_TOKEN)
-    .catch(error => {
-        console.error('❌ ログインに失敗しました:', error);
-        process.exit(1);
-    });
-
+  .catch(err => {
+    console.error("❌ Discord login failed:", err);
+  });
 const app = express();
 const port = process.env.PORT || 3000;
 
