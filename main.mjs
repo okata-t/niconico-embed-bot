@@ -3,6 +3,8 @@ import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import "dotenv/config";
 import express from "express";
 
+dotenv.config();
+
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
