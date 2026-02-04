@@ -1,80 +1,82 @@
-// main.mjs - Discord Botのメインプログラム
+import * as cheerio from "cheerio";
+import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
+import "dotenv/config";
+import fetch from "node-fetch";
 
-// 必要なライブラリを読み込み
-import { Client, GatewayIntentBits } from 'discord.js';
-import dotenv from 'dotenv';
-import express from 'express';
-
-// .envファイルから環境変数を読み込み
-dotenv.config();
-
-// Discord Botクライアントを作成
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,           // サーバー情報取得
-        GatewayIntentBits.GuildMessages,    // メッセージ取得
-        GatewayIntentBits.MessageContent,   // メッセージ内容取得
-        GatewayIntentBits.GuildMembers,     // メンバー情報取得
-    ],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ],
 });
 
-// Botが起動完了したときの処理
-client.once('ready', () => {
-    console.log(`🎉 ${client.user.tag} が正常に起動しました！`);
-    console.log(`📊 ${client.guilds.cache.size} つのサーバーに参加中`);
+const TOKEN = process.env.DISCORD_TOKEN;
+
+client.once("ready", () => {
+  console.log(`Logged in as ${client.user.tag}`);
 });
 
-// メッセージが送信されたときの処理
-client.on('messageCreate', (message) => {
-    // Bot自身のメッセージは無視
-    if (message.author.bot) return;
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
+  // nicovideo URL or sm番号を検出
+  const match =
+    message.content.match(/sm\d+/);
+
+  if (!match) return;
+
+  const videoId = match[0];
+  const proxyUrl = `https://nicovideo.gay/watch/${videoId}`;
+  const originalUrl = `https://www.nicovideo.jp/watch/${videoId}`;
+
+  try {
+    const res = await fetch(proxyUrl, {
+      headers: {
+        "User-Agent":"Twitterbot/1.0",
+        "Accept-Language": "ja-JP"
+      }
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    console.log(html)
+
+    const title =
+      $('meta[property="og:title"]').attr("content");
+
+    const image =
+      $('meta[property="og:image"]').attr("content");
     
-    // 「ping」メッセージに反応
-    if (message.content.toLowerCase() === 'ping') {
-        message.reply('🏓 pong!');
-        console.log(`📝 ${message.author.tag} が ping コマンドを使用`);
-    }
-});
+    const description =
+      $('meta[property="og:description"]').attr("content");
+    
+    const video =
+      $('meta[property="og:video:url"]').attr("content");
+    
+    const release_date =
+      $('meta[property="video:release_date"]').attr("content");
+    
+    const fixed = release_date.replace(/([+-]\d{2})(\d{2})$/, "$1:$2");
 
-// エラーハンドリング
-client.on('error', (error) => {
-    console.error('❌ Discord クライアントエラー:', error);
-});
+    const date = new Date(fixed);
 
-// プロセス終了時の処理
-process.on('SIGINT', () => {
-    console.log('🛑 Botを終了しています...');
-    client.destroy();
-    process.exit(0);
-});
+    await message.suppressEmbeds(true);
+    const embed = new EmbedBuilder()
+      .setTitle(title)
+      .setURL(originalUrl)
+      .setDescription(description)
+      .setImage(image)
+      .setTimestamp(date)
+      .setColor(0x52c7ea);
 
-// Discord にログイン
-if (!process.env.DISCORD_TOKEN) {
-    console.error('❌ DISCORD_TOKEN が .env ファイルに設定されていません！');
-    process.exit(1);
-}
-
-console.log('🔄 Discord に接続中...');
-client.login(process.env.DISCORD_TOKEN)
-    .catch(error => {
-        console.error('❌ ログインに失敗しました:', error);
-        process.exit(1);
+    await message.channel.send(video);
+    await message.channel.send({
+      embeds: [embed]
     });
 
-// Express Webサーバーの設定（Render用）
-const app = express();
-const port = process.env.PORT || 3000;
-
-// ヘルスチェック用エンドポイント
-app.get('/', (req, res) => {
-    res.json({
-        status: 'Bot is running! 🤖',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-// サーバー起動
-app.listen(port, () => {
-    console.log(`🌐 Web サーバーがポート ${port} で起動しました`);
-});
+client.login(process.env.DISCORD_TOKEN);
