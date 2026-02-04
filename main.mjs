@@ -1,6 +1,6 @@
 import * as cheerio from "cheerio";
 import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
-import "dotenv/config";
+import dotenv from "dotenv";
 import express from "express";
 
 dotenv.config();
