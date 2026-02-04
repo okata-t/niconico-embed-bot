@@ -2,7 +2,6 @@ import * as cheerio from "cheerio";
 import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import "dotenv/config";
 import express from "express";
-import fetch from "node-fetch";
 
 const client = new Client({
   intents: [
