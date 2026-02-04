@@ -96,7 +96,6 @@ client.login(process.env.DISCORD_TOKEN)
     });
 
 const app = express();
-const port = process.env.PORT || 3000;
 
 // ヘルスチェック用エンドポイント
 app.get('/', (req, res) => {
