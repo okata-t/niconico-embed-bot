@@ -1,7 +1,10 @@
 import * as cheerio from "cheerio";
-import { Client, EmbedBuilder, GatewayIntentBits } from "discord.js";
+import { Client, Collection, EmbedBuilder, GatewayIntentBits } from "discord.js";
 import dotenv from "dotenv";
 import express from "express";
+import fs from "fs";
+import path from "path";
+import { pathToFileURL } from 'url';
 
 dotenv.config();
 
@@ -11,6 +14,38 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent
   ],
+});
+
+client.commands = new Collection();
+
+// ./commands フォルダ内の .mjs を読み込む
+const commandsPath = path.resolve('./commands');
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.mjs'));
+
+for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
+    const fileUrl = pathToFileURL(filePath).href; // ← Windows対応＆エスケープ済み URL
+    const module = await import(fileUrl);
+    if ('data' in module && 'execute' in module) {
+        client.commands.set(module.data.name, module);
+    } else {
+        console.log(`[WARNING] ${file} は正しいコマンドモジュールではありません`);
+    }
+}
+
+// InteractionCreate
+client.on('interactionCreate', async interaction => {
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+
+    try {
+        await command.execute(interaction);
+    } catch (error) {
+        console.error(error);
+        await interaction.reply({ content: 'エラーが発生しました', ephemeral: true });
+    }
 });
 
 
