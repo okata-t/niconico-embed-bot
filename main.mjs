@@ -18,6 +18,31 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// ./events フォルダ内の .mjs を読み込む
+const eventsPath = path.resolve("./events");
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".mjs"));
+
+for (const file of eventFiles) {
+    const filePath = path.join(eventsPath, file);
+    const fileUrl = pathToFileURL(filePath).href;
+
+    const imported = await import(fileUrl);
+    const event = imported.default ?? imported;
+
+    if (!event?.name || !event?.execute) {
+        console.log(`[WARNING] ${file} は正しいイベントモジュールではありません`);
+        continue;
+    }
+
+    if (event.once) {
+        client.once(event.name, (...args) => event.execute(...args, client));
+    } else {
+        client.on(event.name, (...args) => event.execute(...args, client));
+    }
+
+    console.log(`✅ Event ${event.name} を読み込みました`);
+}
+
 // ./commands フォルダ内の .mjs を読み込む
 const commandsPath = path.resolve('./commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.mjs'));
@@ -59,8 +84,50 @@ client.once("ready", () => {
   console.log(`Logged in as ${client.user.tag}`);
 });
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const DB = path.join(__dirname, "../data/quotes.json");
+
+client.on("messageUpdate", async (oldMessage, newMessage) => {
+   if (newMessage.author.id !== "949479338275913799")
+              return;
+
+          const attachment = newMessage.attachments.first();
+  
+          if (!attachment)
+              return;
+
+          const isImage =
+              attachment.name?.match(/\.(png|jpg|jpeg|gif|webp)$/i);
+
+          if (!isImage)
+              return;
+
+          let quotes = [];
+
+          try {
+              quotes = JSON.parse(await fs.readFile(DB, "utf8"));
+          } catch {}
+
+          if (quotes.some(q => q.url === attachment.url))
+              return;
+
+          quotes.push({
+              url: attachment.url,
+              messageId: newMessage.id,
+              channelId: newMessage.channel.id,
+              created: newMessage.createdTimestamp
+          });
+
+          await fs.writeFile(DB, JSON.stringify(quotes, null, 4), (err) => {
+    if (err) console.error(err);
+});
+
+          console.log(`Quote追加: ${attachment.url}`);
+});
+
 client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
+
 
   // nicovideo URL or sm番号を検出
   const match =
