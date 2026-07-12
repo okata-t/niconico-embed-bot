@@ -20,7 +20,7 @@
   "homepage": "https://github.com/okata-t/niconico-embed-bot#readme",
   "dependencies": {
     "cheerio": "1.0.0-rc.12",
-    "discord.js": "^14.25.1",
+    "discord.js": "^14.26.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "https-proxy-agent": "^7.0.6",

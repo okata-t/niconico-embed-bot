@@ -24,12 +24,18 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('
 
 for (const file of commandFiles) {
     const filePath = path.join(commandsPath, file);
-    const fileUrl = pathToFileURL(filePath).href; // ← Windows対応＆エスケープ済み URL
-    const module = await import(fileUrl);
-    if ('data' in module && 'execute' in module) {
-        client.commands.set(module.data.name, module);
+    const fileUrl = pathToFileURL(filePath).href;
+
+    const imported = await import(fileUrl);
+
+    // default形式・名前付き形式の両方に対応
+    const command = imported.default ?? imported;
+
+    if (command?.data && command?.execute) {
+        console.log(`✅ ${command.data.name} を読み込みました`);
+        client.commands.set(command.data.name, command);
     } else {
-        console.log(`[WARNING] ${file} は正しいコマンドモジュールではありません`);
+        console.log(`⚠️ ${file} は正しいコマンドモジュールではありません`);
     }
 }
 

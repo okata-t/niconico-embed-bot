@@ -9,10 +9,12 @@ const commandsPath = path.resolve('./commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.mjs'));
 
 for (const file of commandFiles) {
-    const module = await import(pathToFileURL(path.join(commandsPath, file)).href);
-    if ('data' in module) {
-        commands.push(module.data.toJSON());
-    }
+const imported = await import(pathToFileURL(path.join(commandsPath, file)).href);
+const command = imported.default ?? imported;
+
+if (command?.data) {
+    commands.push(command.data.toJSON());
+}
 }
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
